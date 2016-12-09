@@ -1,0 +1,60 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Build and Push into OpenShift's Internal Registry
+  hosts: localhost
+  connection: local
+  vars:
+     openshift_master: "https://openshift.example.com:8443"
+     docker_pusher_user: uploader
+     docker_pusher_password: maltron
+     docker_image: alpha/alpha-test:latest
+  tasks:
+     - name: Get Docker Registry's IP
+       command: oc get service/docker-registry --output jsonpath="{.spec.clusterIP}" --namespace default
+       register: docker_registry_ip
+       tags: registry
+     
+     - name: Get Docker Registry's Port
+       command: oc get service/docker-registry --output jsonpath="{.spec.ports.*.port}" --namespace default
+       register: docker_registry_port
+       tags: registry
+
+     - name: Set Docker Registry's Address
+       set_fact: docker_registry={{ docker_registry_ip.stdout }}:{{ docker_registry_port.stdout }}
+       tags: registry
+
+     - name: Setting Docker's TAG{{ ':' }} {{ docker_registry }}/{{ docker_image }} 
+       set_fact: docker_tag={{ docker_registry}}/{{ docker_image }}
+
+     - name: Return to a System Admin User
+       command: oc login --username=system:admin --insecure-skip-tls-verify --server={{ openshift_master }}
+
+     - name: Give the Docker's Pusher a role named 'system:image-builder'
+       command: oadm policy add-role-to-user system:image-builder {{ docker_pusher_user }}
+
+     - name: Give the Docker's Pusher a Administrative privileges into Namespace OpenShift
+       command: oadm policy add-role-to-user admin {{ docker_pusher_user }} --namespace openshift
+
+     - name: Log with Docker's Pusher in order to get his token
+       command: oc login --username={{ docker_pusher_user }} --password={{ docker_pusher_password }} --insecure-skip-tls-verify --server={{ openshift_master }}
+
+     - name: Get Docker Pusher's Token
+       command: oc whoami --token=true
+       register: docker_pusher_token
+
+     - name: Return to a System Admin User
+       command: oc login --username=system:admin --insecure-skip-tls-verify --server={{ openshift_master }}
+
+     - name: Log into Docker's using the token
+       command: docker login --username {{ docker_pusher_user }} --email {{ docker_pusher_user }}@abc.com --password {{ docker_pusher_token.stdout }} {{ docker_registry }}
+
+     - name: Before building, trying to remove anything that it was previously created
+       command: docker rmi {{ docker_tag }}
+       ignore_errors: True
+  
+     - name: Build the current image{{ ':' }} "docker build --no-cache --rm=true --force-rm --tag {{ docker_tag }} ../" 
+       command: docker build --no-cache --rm=true --force-rm --tag {{ docker_tag }} ../
+
+     - name: Push into Registry
+       command: docker push {{ docker_tag }}
+
