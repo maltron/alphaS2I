@@ -28,6 +28,7 @@ gpgcheck=0" > /etc/yum.repos.d/alpha.repo && \
 ### Install Maven
     tar zxvf /apache-maven-3.3.9-bin.tar.gz && \
     mkdir --parents ${MAVEN_HOME} && rm -rf ${MAVEN_HOME} && mv apache-maven-3.3.9 /opt/apache && mv /opt/apache/apache-maven-3.3.9 ${MAVEN_HOME} && \
+    mkdir --parents ${HOME}/.m2 && \
     export PATH=${PATH}:${MAVEN_HOME}/bin && \
 ### User
     groupadd --system alpha --gid 1001 && \

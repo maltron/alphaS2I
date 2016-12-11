@@ -1,2 +1,4 @@
-#!/bin/bash -e
-echo "Save Artifacts script"
+#!/bin/bash
+set -ue
+cd ${HOME}
+tar cf - .m2

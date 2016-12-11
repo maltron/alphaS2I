@@ -5,19 +5,19 @@ items:
   kind: ImageStream
   metadata:
     labels:
-      application: alpha-example
-    name: alpha-example
+      application: alpha
+    name: alpha-output
 - apiVersion: v1
   kind: BuildConfig
   metadata:
     labels:
-      application: alpha-example
-    name: alpha-example
+      application: alpha
+    name: alpha
   spec:
     output:
       to:
         kind: ImageStreamTag
-        name: alpha-example:latest
+        name: alpha-output:latest
     source:
       contextDir: HelloWorld
       git:
@@ -26,12 +26,15 @@ items:
       type: Git
     strategy:
       sourceStrategy:
+        env:
+        - name: BUILD_LOGLEVEL
+          value: "5"
         forcePull: true
         from:
           kind: ImageStreamTag
-          name: alpha-test:latest
+          name: alpha-base:latest
           namespace: alpha
-      incremental: true
+        incremental: true
       type: Source
     triggers:
     - imageChange: {}

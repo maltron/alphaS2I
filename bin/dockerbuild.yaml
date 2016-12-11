@@ -7,7 +7,7 @@
      openshift_master: "https://openshift.example.com:8443"
      docker_pusher_user: uploader
      docker_pusher_password: maltron
-     docker_image: alpha/alpha-test:latest
+     docker_image: alpha/alpha-base:latest
   tasks:
      - name: Get Docker Registry's IP
        command: oc get service/docker-registry --output jsonpath="{.spec.clusterIP}" --namespace default
